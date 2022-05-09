@@ -95,7 +95,7 @@ def _run():
     except:
         pass
 
-    time.sleep(10000)
+    # time.sleep(10000)
     # 提交
     choice = '/html/body/form/div[5]/div[9]/div[3]/div[1]/div'
     driver.find_element_by_xpath(choice).click()
