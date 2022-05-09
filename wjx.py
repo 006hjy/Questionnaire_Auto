@@ -3,6 +3,14 @@ from selenium import webdriver
 import time
 import random
 
+url = "https://www.wjx.cn/vj/eYzdova.aspx"
+xpath = "/html/body/div[4]/div[2]/div[2]/div[1]/div/div[1]/div[2]/div[2]/fieldset/div[#]/div[2]/ul/li[$]/a"
+input_xpath = "/html/body/div[4]/div[2]/div[2]/div[1]/div/div[1]/div[2]/div[2]/fieldset/div[#]/div[2]/ul/li[$]/input[2]"
+list1 = [
+    [0, 0, 0, [0, ["hello"]]],  # 1
+    (50, 50, 50, [100, ["hello"]], [100, ["hello"]], [100, ["hello"]]),  # 2
+]
+
 
 def maydo(persent):
     x = random.randint(1, 10000)
@@ -12,21 +20,7 @@ def maydo(persent):
         return False
 
 
-def danxuan(_list, _str):  # _list各选项概率;_str选项Xpath
-    choice = ''
-    x = random.randint(1, 10000)
-    a = 0
-    b = 0
-    for i in _list:
-        a += i
-        b += 1
-        if (x <= a*100) or (b == len(_list)):
-            choice = _str.replace('$', str(b))
-            return choice
-
-
 def _run():
-    # 0
     delay = 0
     option = webdriver.ChromeOptions()
     option.add_argument('--incognito')
@@ -37,77 +31,71 @@ def _run():
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
                            'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'})
 
-    driver.get("https://www.wjx.cn/vm/Q09or3S.aspx")
+    driver.get(url)
 
-    def block(_list, _num, _start, _str):  # _list:总概率表,_num:总题数,_start:开始Xpath编号,_str:Xpath
-        for i in range(0, _num):
-            if(type(_list[i]) == list):  # 处理单选
-                choice = danxuan(
-                    _list[i], _str.replace('#', str(_start+i)))
-                driver.find_element_by_xpath(choice).click()
-                time.sleep(delay)
-            if(type(_list[i]) == tuple):  # 处理多选
-                choice = _str.replace('#', str(_start+i))
-                while True:
-                    a = 0  # 第几个选项
-                    flag = 0  # 选了几个
-                    for j in _list[i]:
-                        a += 1
-                        if maydo(j):
-                            flag += 1
+    # _list:总概率表,_start:第一题Xpath题号,_xpath:选项,input_xpath:输入框
+    def block(_list, _start, _xpath, input_xpath):
+        sum_list = len(_list)  # 总题数
+        th = _start - 1  # 题目xpath编号记录
+        for item in _list:
+            th += 1
+            print(th)
+            if(type(item) == list):  # 处理单选
+                x = random.randint(1, 10000)  # 产生随机数
+                a = 0  # 概率累计
+                b = 0  # 选项序号
+                for j in item:
+                    b += 1
+                    if(type(j) == list):
+                        a += j[0]
+                    else:
+                        a += j
+                    if (x <= a*100) or (b == len(item)):
+                        choice = _xpath.replace(
+                            '#', str(th)).replace('$', str(b))
+                        driver.find_element_by_xpath(choice).click()
+                        if(type(j) == list):
+                            pass
+                        else:
+                            break
+                        time.sleep(delay)
+                        if(type(j) == list):
+                            choice = input_xpath.replace(
+                                '#', str(th)).replace('$', str(b))
                             driver.find_element_by_xpath(
-                                choice.replace('$', str(a))).click()
-                            # if a == len(_list):
-                            #     choice = '/html/body/form/div[5]/div[4]/fieldset/div[11]/div[2]/div[8]/div[2]/input'
-                            #     driver.find_element_by_xpath(choice).send_keys(
-                            #         random.choice(['没有', '无', '差不多', '外卖方便', '都一样']))
-                    if flag > 0:
-                        break
-                time.sleep(delay)
+                                choice).send_keys(random.choice(j[1]))
 
+            elif(type(item) == tuple):  # 处理多选
+                a = 0  # 概率
+                b = 0  # 选项序号
+                for j in item:
+                    b += 1
+                    if(type(j) == list):
+                        a = j[0]
+                    else:
+                        a = j
+                    if maydo(a):
+                        choice = _xpath.replace(
+                            '#', str(th)).replace('$', str(b))
+                        driver.find_element_by_xpath(choice).click()
+                        if(type(j) == list):
+                            pass
+                        else:
+                            continue
+                        time.sleep(delay)
+                        if(type(j) == list):
+                            choice = input_xpath.replace(
+                                '#', str(th)).replace('$', str(b))
+                            driver.find_element_by_xpath(
+                                choice).send_keys(random.choice(j[1]))
     time.sleep(delay)
-    list1 = [
-        [10, 50, 30, 10],  # 1
-        [50, 50],  # 2
-        [75, 0, 25, 0, 0, 0],  # 3
-        [25, 25, 25, 25],  # 4
-        [10, 70, 10, 10],  # 5#6
-        [50, 50],  # 6#7
-        [20, 50, 20, 10],  # 7#8
-        [30, 50, 10, 5, 5],  # 8#9
-        (50, 50, 70, 50, 50, 0),  # 9#10
-        [50, 40, 10],  # 10#11
-        [95, 5],  # 11#12
-        [40, 50, 5, 5],  # 12#13
-        [20, 30, 20, 20, 10],  # 13#15
-        (30, 10, 10, 30, 20, 0),  # 14#16
-        (70, 50, 50, 40, 50, 50, 60, 20, 20, 0, 3),  # 15#17
-        [15, 35, 35, 10, 5],  # 16#18
-        [15, 35, 35, 10, 5],  # 17#19
-        [15, 35, 35, 10, 5],  # 18#20
-        [15, 35, 35, 10, 5],  # 19#21
-        [15, 35, 35, 10, 5],  # 20#22
-        [20, 30, 35, 10, 5],  # 21#23
-        [15, 35, 35, 10, 5],  # 22#24
-        [15, 35, 35, 14, 1],  # 23#25
-        [15, 35, 35, 10, 5],  # 24#26
-        [15, 35, 35, 10, 5],  # 25#28
-        [15, 35, 35, 10, 5],  # 26#30
-        [15, 35, 35, 10, 5],  # 27#31
-        (50, 50, 50, 50, 50, 50, 0),  # 28#32
-        (10, 10, 30, 20, 50, 0)  # 29#33
-    ]
+
     try:
-        block(list1, 29, 1,
-            '/html/body/form/div[5]/div[4]/fieldset/div[#]/div[2]/div[$]/span/a')
-    # for i in range(1, 6):
-    #     driver.find_element_by_xpath(
-    #         '/html/body/form/div[5]/div[4]/fieldset/div[29]/div[2]/div[$]/span/a'.replace('$', str(i))).click()
-        driver.find_element_by_xpath('/html/body/form/div[5]/div[4]/fieldset/div[30]/div[2]/input').send_keys(
-            random.choice(["."]))
+        block(list1, 1, xpath, input_xpath)
     except:
         pass
-    # time.sleep(10000)
+
+    time.sleep(10000)
     # 提交
     choice = '/html/body/form/div[5]/div[9]/div[3]/div[1]/div'
     driver.find_element_by_xpath(choice).click()
